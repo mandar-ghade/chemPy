@@ -35,31 +35,40 @@ class Element:
         return self.symbol == other.symbol
 
 
-class Compound:
-    def __init__(self, elements: Counter[Element]):
-        self.elements = elements
+#Make counter for Tokens <- Counter[Token]
+class Token(Element):
+    def __init__(self, element_str: str):
+        super().__init__(element_str)
+        self.symbol = element_str
+        self.element = Element(element_str)
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.elements})"
+        return f'{self.__class__.__name__}({self.element})'
+    
 
-    def stringify(self) -> str:
-        return ''.join(element.symbol + 
-                       (str(self.elements[element]) 
-                       if self.elements[element] != 1 else '')
-                       for element in self.elements)
+
+class Compound:
+    def __init__(self, tokens: list[Token], comp_str: str):
+        self.tokens = tokens
+        self.elements = Counter(tokens)
+        self.comp_str = comp_str
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.tokens})"
     
     def count(self, element) -> int:
-        for e, count in self.elements.items():
-            if e != element:
-                continue
-            return count
-        return 0
+        count = [count for e, count in Counter(self.tokens).items() if e == element]
+        if len(count) == 0:
+            return 0
+        elif len(count) > 0:
+            return sum(count)
+        return int(count)
 
     def __eq__(self, other: Self) -> bool:
-        return self.elements == other.elements
+        return self.tokens == other.tokens
     
 
-class Token(Compound):
+class Tokenize:
     def __init__(self, comp_str: str):
         assert isinstance(comp_str, str)
         self.comp_str = comp_str
@@ -151,7 +160,7 @@ class Token(Compound):
         return multiplier_list[-1] if len(multiplier_list) > 0 else 1
     
     def _parse_elements(self) -> Compound:
-        elements = Counter()
+        elements = []
         comp_str = self.comp_str
         for i, char in enumerate(comp_str):
             multiplier = self.multipliers[i]
@@ -167,20 +176,32 @@ class Token(Compound):
                 count += digit
             count = 1 if count == '' else int(count)
             element = comp_str[i:i+2] if two_letter else char
-            elements[Element(f'{element}')] += count * multiplier
-        self.elements = elements
-        return Compound(elements)
+            for _ in range(count * multiplier):
+                elements.append(Token(element))
+        self.elements = Counter(elements)
+        return Compound(elements, self.comp_str)
     
     def _get_molar_mass(self) -> float:
-        return sum(element.molar_mass * count 
-                   for element, count in self.compound.elements.items())
+        return sum(token.molar_mass * count
+                   for token, count in self.elements.items())
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}({self.compound})'
     
+    def __iter__(self) -> Self:
+        self.index = 0
+        return self
+    
+    def __next__(self) -> int:
+        x = [token for i, token in enumerate(self.compound.tokens) if i == self.index]
+        if x == []:
+            raise StopIteration
+        x = x[0]
+        self.index += 1
+        return x
 
 class Equation:
-    def __init__(self, reactants: list[Token], products: list[Token]):
+    def __init__(self, reactants: list[Compound], products: list[Compound]):
         assert isinstance(reactants, list)
         assert isinstance(products, list)
         self.reactants = reactants
@@ -206,26 +227,26 @@ class Equation:
                     for product, coef in zip(self.products, self.coefficients[len(self.reactants):])
                 ])
     
-    def total_left(self) -> Counter[Element]:
+    def total_left(self) -> Counter[Token]:
         reactants = Counter()
         for reactant in self.reactants:
-            compound = reactant.compound.elements.most_common()
+            compound = reactant.elements.most_common()
             for (element, count) in compound:
                 reactants[element] += count 
         return reactants
 
-    def total_right(self) -> Counter[Element]:
+    def total_right(self) -> Counter[Token]:
         products = Counter()
         for product in self.products:
-            compound = product.compound.elements.most_common()
+            compound = product.elements.most_common()
             for (element, count) in compound:
                 products[element] += count 
         return products
 
-    def count_left(self, element: Element) -> list[int]:
+    def count_left(self, element: Token) -> list[int]:
         return [compound.count(element) for compound in self.reactants]
 
-    def count_right(self, element: Element) -> list[int]:
+    def count_right(self, element: Token) -> list[int]:
         return [compound.count(element) for compound in self.products]
     
     def _get_coefficients(self, matrix: list) -> list:
@@ -268,9 +289,9 @@ class Equation:
 
 def main():
     line = input('Equation> ')
-    reactants = [Token(reactant) 
+    reactants = [Compound(Tokenize(reactant), reactant)
                  for reactant in line.split('=')[0].split('+')]
-    products = [Token(product) 
+    products = [Compound(Tokenize(product), product)
                  for product in line.split('=')[1].split('+')]
     equation = Equation(reactants, products)
     equation.balance()
