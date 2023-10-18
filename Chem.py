@@ -297,5 +297,6 @@ def main():
     equation.balance()
     print(equation)
 
+
 if __name__ == '__main__':
     main()
