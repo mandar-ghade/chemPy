@@ -228,6 +228,7 @@ class Equation:
                 ])
     
     def total_left(self) -> Counter[Token]:
+        '''Returns total elements to the left of the equation (reactants).'''
         reactants = Counter()
         for reactant in self.reactants:
             compound = reactant.elements.most_common()
@@ -236,6 +237,7 @@ class Equation:
         return reactants
 
     def total_right(self) -> Counter[Token]:
+        '''Returns total elements to the right of the equation (products).'''
         products = Counter()
         for product in self.products:
             compound = product.elements.most_common()
@@ -244,13 +246,15 @@ class Equation:
         return products
 
     def count_left(self, element: Token) -> list[int]:
+        '''Counts occurances of an element in a compound in the reactants.'''
         return [compound.count(element) for compound in self.reactants]
 
     def count_right(self, element: Token) -> list[int]:
+        '''Counts occurances of an element in a compound in the products.'''
         return [compound.count(element) for compound in self.products]
     
     def _get_coefficients(self, matrix: list) -> list:
-        '''Gets coefficients'''
+        '''Returns a list of coefficients, whose indices correspond to the positions of compounds in the given equation.'''
         matrix = smp.Matrix(matrix)
         length = matrix.shape[1]
         solutions = smp.linsolve(matrix, [smp.Symbol(f'{ascii_lowercase[n]}') for n in range(length)])
@@ -270,6 +274,7 @@ class Equation:
         return args
 
     def balance(self) -> None:
+        '''Balances the chemical equation.'''
         reactant_elements = self.total_left()
         product_elements = self.total_right()
         if reactant_elements == product_elements:
