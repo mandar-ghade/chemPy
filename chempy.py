@@ -51,7 +51,6 @@ class Subscript:
     def __eq__(self, other: Self) -> bool:
         return (self.element_str, self.subs, self.element_index) == (other.element_str, other.subs, other.element_index)
 
-
 class Element:
     def __init__(self, symbol: str, amu = None):
         assert isinstance(symbol, str)
