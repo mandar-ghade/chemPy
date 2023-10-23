@@ -1,7 +1,6 @@
 from collections import Counter
 import fractions
 import json
-from IPython.display import display, Markdown
 import os
 import pandas as pd
 from string import ascii_lowercase
@@ -227,7 +226,9 @@ class Compound:
     def subscript(self, index: int) -> Optional[int]:
         if self.subscripts is None:
             return None
-        subs = [sub.subs for sub in self.subscripts if sub.element_index == index and sub.subs is not None]
+        subs: list[int] = [sub.subs 
+                for sub in self.subscripts 
+                if sub.start_index - 1 == index and sub.subs is not None]
         if len(subs) == 0:
             return None
         elif len(subs) > 1:
@@ -253,8 +254,6 @@ class Compound:
         return self.tokens == other.tokens
     
 
-
-
 class Equation:
     def __init__(self, reactants: list[Compound], products: list[Compound]):
         assert isinstance(reactants, list)
@@ -262,6 +261,7 @@ class Equation:
         self.reactants = reactants
         self.products = products
         self.coefficients = [1 for _ in range(len(self.reactants) + len(self.products))]
+        self.equation = self._equation()
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}([{self.reactants}], [{self.products}])"
@@ -293,13 +293,12 @@ class Equation:
 
     def _repr_mimebundle_(self, **kwargs) -> dict:
         return {
-            "text/plain": f'${self._equation()}$',
+            "text/plain": f'{self.equation}',
             "text/latex": f'${self._equation(latex=True)}$'
         }
     
-
     def __str__(self) -> str:
-        return self._equation()
+        return self.equation
     
     def total_left(self) -> Counter[Token]:
         '''Returns total elements to the left of the equation (reactants).'''
@@ -364,6 +363,8 @@ class Equation:
                 row[i] = -count
             matrix.append(row)
         self.coefficients = self._get_coefficients(matrix)
+        self.equation = self._equation()
+
 
 def main():
     pass
