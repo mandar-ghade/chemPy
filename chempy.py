@@ -238,16 +238,17 @@ class Compound:
 
     def latexify(self) -> str:
         if self.subscripts == []:
-            raise Exception('Subscripts not inputted correctly.')
+            return self.comp_str
         latex_str = ''
         for i, c in enumerate(self.comp_str):
-            if c.isdigit():
+            if c.isdigit() or c == ' ':
                 continue
             subs = self.subscript(i)
-            if subs is None:
-                latex_str += c
+            prefix = '\\text{'
+            if subs is None: # check delims to eliminate \text redundancy.
+                latex_str += prefix + c + '}'
             else:
-                latex_str += c + '_{' + str(subs) + '}'
+                latex_str += prefix + c + '}' + '_{' + str(subs) + '}'
         return latex_str
 
 
@@ -267,27 +268,27 @@ class Equation:
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}([{self.reactants}], [{self.products}])"
 
+    def _center_str(self, inp: str, latex: bool) -> str:
+        return inp if latex in [None, False] else '\\text{' + inp + '}'
+
+    def _latex(self, inp: Compound, latex: bool) -> str:
+        return inp.comp_str.strip() if latex in [None, False] else inp.latexify()  
+
     def _equation(self, latex = None) -> str:
         return ' + '.join(
             [
-                coef + f'({reactant.latexify() if latex not in [None, False] else reactant.comp_str.strip()})' 
-                if int(str(coef).replace(',','')) > 1 
-                    else (
-                        reactant.latexify() if latex not in [None, False]
-                        else reactant.comp_str.strip()
-                    )
+                self._center_str(coef, latex) + f'({self._latex(reactant, latex)})' 
+                if int(str(coef).replace(',', '')) > 1 
+                else self._latex(reactant, latex)
                 for reactant, coef in 
                 zip(self.reactants, self.coefficients[:len(self.reactants)])
             ]) \
         + ' → ' + \
             ' + '.join(
                 [
-                    coef + f'({product.latexify() if latex not in [None, False] else product.comp_str.strip()})' 
-                    if int(str(coef).replace(',','')) > 1 
-                        else (
-                            product.latexify() if latex not in [None, False]
-                            else product.comp_str.strip()
-                        )
+                    self._center_str(coef, latex) + f'({self._latex(product, latex)})' 
+                    if int(str(coef).replace(',', '')) > 1 
+                    else self._latex(product, latex)
                     for product, coef in zip(self.products, self.coefficients[len(self.reactants):])
                 ])
 
