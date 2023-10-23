@@ -10,6 +10,7 @@ from typing import List, Self, Optional
 ELEMENTS_PATH = os.path.dirname(os.path.realpath(__file__)) + '\\elements.json'
 LEFT_DELIMS = ['[', '(', '{']
 RIGHT_DELIMS = [']', ')', '}']
+ALL_DELIMS = LEFT_DELIMS + RIGHT_DELIMS
 
 with open(ELEMENTS_PATH, 'r') as fp:
     ELEMENT_ITEMS: json = json.load(fp)
@@ -88,7 +89,7 @@ class Tokenize:
         self.molar_mass = self._get_molar_mass()
 
     def _nests_parenthesis(self, s, e) -> bool:
-        return any(c in LEFT_DELIMS + RIGHT_DELIMS 
+        return any(c in ALL_DELIMS
                     for c in self.comp_str[s+1:e-1])
 
     def _get_count(self, r: int) -> list[int, bool]:
@@ -166,7 +167,7 @@ class Tokenize:
         comp_str = self.comp_str
         for i, char in enumerate(comp_str):
             multiplier = self.multipliers[i]
-            if char in LEFT_DELIMS + RIGHT_DELIMS:
+            if char in ALL_DELIMS:
                 subscript = Subscript(comp_str, i, i + 1)
                 subs_list.append(subscript)
             if char not in ELEMENTS and comp_str[i:i+2] not in ELEMENTS:
