@@ -212,7 +212,7 @@ class Compound:
         self.tokens = tokens
         self.elements = Counter(tokens)
         self.comp_str = comp_str
-        self.subscripts = subscripts
+        self.subscripts: list[Subscript] = subscripts
         self.molar_mass = self.tokenized_comp.molar_mass
 
     def __repr__(self) -> str:
