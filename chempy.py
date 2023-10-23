@@ -1,10 +1,12 @@
 from collections import Counter
 import fractions
 import json
+from IPython.display import display, Markdown
 import os
+import pandas as pd
 from string import ascii_lowercase
 import sympy as smp
-from typing import Self, Optional
+from typing import List, Self, Optional
 
 ELEMENTS_PATH = os.path.dirname(os.path.realpath(__file__)) + '\\elements.json'
 LEFT_DELIMS = ['[', '(', '{']
@@ -16,12 +18,46 @@ with open(ELEMENTS_PATH, 'r') as fp:
 ELEMENTS = sorted(ELEMENT_ITEMS.keys(), key=len, reverse=True)
 
 
+class Subscript:
+    def __init__(self, comp_str: str, element_index = None, start_index = None, size = None):
+        assert isinstance(comp_str, str)
+        self.comp_str = comp_str
+        self.element_index = element_index
+        if start_index is None and size is None:
+            raise Exception(f'Cannot derive subscript size from {comp_str}')
+        self.start_index = start_index
+        self.element_str = self.comp_str[element_index:start_index]
+        self.size, self.subs = self._get_sizes()
+
+    def _get_sizes(self) -> list[int, Optional[int]]:
+        size = ''
+        for n in range(self.start_index, len(self.comp_str)+1):
+            digit = self.comp_str[n:n+1]
+            if not digit.isdigit():
+                break
+            size += digit
+        subs = int(size) if size != '' else None
+        if size == '':
+            size = 1
+        size = int(size)
+        return [size, subs]
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}([element='{self.element_str}', subs={self.subs}, index={self.element_index}])"
+
+    def __hash__(self) -> int:
+        return hash((self.element_str, self.subs, self.element_index))
+    
+    def __eq__(self, other: Self) -> bool:
+        return (self.element_str, self.subs, self.element_index) == (other.element_str, other.subs, other.element_index)
+
+
 class Element:
-    def __init__(self, symbol: str):
+    def __init__(self, symbol: str, amu = None):
         assert isinstance(symbol, str)
         self.symbol = symbol
         self.molar_mass = float(ELEMENT_ITEMS[self.symbol])
-    
+        
     def __str__(self) -> str:
         return self.symbol
     
@@ -35,39 +71,12 @@ class Element:
         return self.symbol == other.symbol
 
 
-#Make counter for Tokens <- Counter[Token]
 class Token(Element):
     def __init__(self, element_str: str):
         super().__init__(element_str)
-        self.symbol = element_str
-        self.element = Element(element_str)
-
-    def __repr__(self) -> str:
-        return f'{self.__class__.__name__}({self.element})'
-    
 
 
-class Compound:
-    def __init__(self, tokens: list[Token], comp_str: str):
-        self.tokens = tokens
-        self.elements = Counter(tokens)
-        self.comp_str = comp_str
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.tokens})"
-    
-    def count(self, element) -> int:
-        count = [count for e, count in Counter(self.tokens).items() if e == element]
-        if len(count) == 0:
-            return 0
-        elif len(count) > 0:
-            return sum(count)
-        return int(count)
-
-    def __eq__(self, other: Self) -> bool:
-        return self.tokens == other.tokens
-    
-
+#work on __eq__
 class Tokenize:
     def __init__(self, comp_str: str):
         assert isinstance(comp_str, str)
@@ -75,16 +84,9 @@ class Tokenize:
         self.index = 0
         self.multiplier_list = self._multipliers(0, len(self.comp_str))
         self.multipliers = [self._get_multiplier(n) for n in range(len(self.comp_str))]
-        self.elements = None
-        self.compound: Compound = self._parse_elements()
+        self.elements: Optional[Counter[Token]] = None
+        self.compound: tuple[list[Token], list[Subscript]] = self._parse_elements()
         self.molar_mass = self._get_molar_mass()
-
-    def _retrieve_first_ldi(self) -> int:
-        for i, c in enumerate(self.comp_str):
-            if c not in LEFT_DELIMS:
-                continue
-            return i
-        return len(self.comp_str)
 
     def _nests_parenthesis(self, s, e) -> bool:
         return any(c in LEFT_DELIMS + RIGHT_DELIMS 
@@ -155,31 +157,32 @@ class Tokenize:
             subs = original_subs
         return self._multipliers(ldi, rdi, subs, p_list)
         
-    def _get_multiplier(self, n: int):
+    def _get_multiplier(self, n: int) -> int:
         multiplier_list = [multiplier for ldi, rdi, multiplier in self.multiplier_list if ldi <= n <= rdi]
         return multiplier_list[-1] if len(multiplier_list) > 0 else 1
     
-    def _parse_elements(self) -> Compound:
+    def _parse_elements(self) -> tuple[list[Token], list[Subscript]]:
         elements = []
+        subs_list: list[Subscript] = []
         comp_str = self.comp_str
         for i, char in enumerate(comp_str):
             multiplier = self.multipliers[i]
+            if char in LEFT_DELIMS + RIGHT_DELIMS:
+                subscript = Subscript(comp_str, i, i + 1)
+                subs_list.append(subscript)
             if char not in ELEMENTS and comp_str[i:i+2] not in ELEMENTS:
                 continue
             two_letter = comp_str[i:i+2] in ELEMENTS
             start = i + 2 if two_letter else i + 1
-            count = ''
-            for n in range(start, len(comp_str)+1):
-                digit = comp_str[n:n+1]
-                if not digit.isdigit():
-                    break
-                count += digit
-            count = 1 if count == '' else int(count)
+            subscript = Subscript(comp_str, i, start)
+            count = subscript.size
             element = comp_str[i:i+2] if two_letter else char
+            subs_list.append(subscript)
             for _ in range(count * multiplier):
                 elements.append(Token(element))
         self.elements = Counter(elements)
-        return Compound(elements, self.comp_str)
+        self.subs_list = subs_list
+        return (elements, subs_list)
     
     def _get_molar_mass(self) -> float:
         return sum(token.molar_mass * count
@@ -193,12 +196,64 @@ class Tokenize:
         return self
     
     def __next__(self) -> int:
-        x = [token for i, token in enumerate(self.compound.tokens) if i == self.index]
-        if x == []:
+        tk = [token for i, token in enumerate(self.compound.tokens) if i == self.index]
+        if tk == []:
             raise StopIteration
-        x = x[0]
+        tk = tk[0]
         self.index += 1
-        return x
+        return tk
+
+
+class Compound:
+    def __init__(self, comp_str: str, tokens: list[Token] = None, subscripts: list[Subscript] = None):
+        self.tokenized_comp = Tokenize(comp_str)
+        if tokens is None:
+            tokens, subscripts = self.tokenized_comp.compound
+        self.tokens = tokens
+        self.elements = Counter(tokens)
+        self.comp_str = comp_str
+        self.subscripts = subscripts
+        self.molar_mass = self.tokenized_comp.molar_mass
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self.tokens})"
+    
+    def count(self, element) -> int:
+        count = [count for e, count in Counter(self.tokens).items() if e == element]
+        if len(count) == 0:
+            return 0
+        return sum(count)
+
+    def subscript(self, index: int) -> Optional[int]:
+        if self.subscripts is None:
+            return None
+        subs = [sub.subs for sub in self.subscripts if sub.element_index == index and sub.subs is not None]
+        if len(subs) == 0:
+            return None
+        elif len(subs) > 1:
+            raise Exception(f'Multiple subscripts show under comp_str={self.comp_str}, index={index}')
+        return int(subs[0])
+
+    def latexify(self) -> str:
+        if self.subscripts == []:
+            raise Exception('Subscripts not inputted correctly.')
+        latex_str = ''
+        for i, c in enumerate(self.comp_str):
+            if c.isdigit():
+                continue
+            subs = self.subscript(i)
+            if subs is None:
+                latex_str += c
+            else:
+                latex_str += c + '_{' + str(subs) + '}'
+        return latex_str
+
+
+    def __eq__(self, other: Self) -> bool:
+        return self.tokens == other.tokens
+    
+
+
 
 class Equation:
     def __init__(self, reactants: list[Compound], products: list[Compound]):
@@ -210,22 +265,41 @@ class Equation:
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}([{self.reactants}], [{self.products}])"
-    
-    def __str__(self) -> str:
+
+    def _equation(self, latex = None) -> str:
         return ' + '.join(
             [
-                coef + f'({reactant.comp_str.strip()})' 
-                if int(str(coef).replace(',','')) > 1 else reactant.comp_str.strip()
+                coef + f'({reactant.latexify() if latex not in [None, False] else reactant.comp_str.strip()})' 
+                if int(str(coef).replace(',','')) > 1 
+                    else (
+                        reactant.latexify() if latex not in [None, False]
+                        else reactant.comp_str.strip()
+                    )
                 for reactant, coef in 
                 zip(self.reactants, self.coefficients[:len(self.reactants)])
             ]) \
-                + ' -> ' + \
+        + ' → ' + \
             ' + '.join(
                 [
-                    coef + f'({product.comp_str.strip()})' 
-                    if int(str(coef).replace(',','')) > 1 else product.comp_str.strip()
+                    coef + f'({product.latexify() if latex not in [None, False] else product.comp_str.strip()})' 
+                    if int(str(coef).replace(',','')) > 1 
+                        else (
+                            product.latexify() if latex not in [None, False]
+                            else product.comp_str.strip()
+                        )
                     for product, coef in zip(self.products, self.coefficients[len(self.reactants):])
                 ])
+
+
+    def _repr_mimebundle_(self, **kwargs) -> dict:
+        return {
+            "text/plain": f'${self._equation()}$',
+            "text/latex": f'${self._equation(latex=True)}$'
+        }
+    
+
+    def __str__(self) -> str:
+        return self._equation()
     
     def total_left(self) -> Counter[Token]:
         '''Returns total elements to the left of the equation (reactants).'''
@@ -246,11 +320,11 @@ class Equation:
         return products
 
     def count_left(self, element: Token) -> list[int]:
-        '''Counts occurances of an element in a compound in the reactants.'''
+        '''Counts occurances of an element out of all the reactants.'''
         return [compound.count(element) for compound in self.reactants]
 
     def count_right(self, element: Token) -> list[int]:
-        '''Counts occurances of an element in a compound in the products.'''
+        '''Counts occurances of an element out of all the products.'''
         return [compound.count(element) for compound in self.products]
     
     def _get_coefficients(self, matrix: list) -> list:
@@ -291,16 +365,8 @@ class Equation:
             matrix.append(row)
         self.coefficients = self._get_coefficients(matrix)
 
-
 def main():
-    line = input('Equation> ')
-    reactants = [Compound(Tokenize(reactant), reactant)
-                 for reactant in line.split('=')[0].split('+')]
-    products = [Compound(Tokenize(product), product)
-                 for product in line.split('=')[1].split('+')]
-    equation = Equation(reactants, products)
-    equation.balance()
-    print(equation)
+    pass
 
 
 if __name__ == '__main__':
