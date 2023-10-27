@@ -1,4 +1,5 @@
 from collections import Counter
+from qm_model import get_electron_config
 import fractions
 import json
 import os
@@ -16,7 +17,6 @@ with open(ELEMENTS_PATH, 'r') as fp:
     ELEMENT_ITEMS: json = json.load(fp)
 
 ELEMENT_PROTON_DATA = {element: i+1 for i, [element, _] in enumerate(ELEMENT_ITEMS.items())}
-
 ELEMENTS = sorted(ELEMENT_ITEMS.keys(), key=len, reverse=True)
 
 class Subscript:
@@ -59,6 +59,7 @@ class Element:
         self.symbol = symbol
         self.molar_mass = float(ELEMENT_ITEMS[self.symbol])
         self.protons = ELEMENT_PROTON_DATA[self.symbol]
+        self.electron_configuration = get_electron_config(self.protons)
         self.electrons = self.protons
         self.mass = mass
         self.moles = None
