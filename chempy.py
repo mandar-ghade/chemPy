@@ -15,8 +15,9 @@ ALL_DELIMS = LEFT_DELIMS + RIGHT_DELIMS
 with open(ELEMENTS_PATH, 'r') as fp:
     ELEMENT_ITEMS: json = json.load(fp)
 
-ELEMENTS = sorted(ELEMENT_ITEMS.keys(), key=len, reverse=True)
+ELEMENT_PROTON_DATA = {element: i+1 for i, [element, _] in enumerate(ELEMENT_ITEMS.items())}
 
+ELEMENTS = sorted(ELEMENT_ITEMS.keys(), key=len, reverse=True)
 
 class Subscript:
     def __init__(self, comp_str: str, element_index = None, start_index = None, size = None):
@@ -53,10 +54,16 @@ class Subscript:
 
 
 class Element:
-    def __init__(self, symbol: str, amu = None):
+    def __init__(self, symbol: str, mass = None, amu = None):
         assert isinstance(symbol, str)
         self.symbol = symbol
         self.molar_mass = float(ELEMENT_ITEMS[self.symbol])
+        self.protons = ELEMENT_PROTON_DATA[self.symbol]
+        self.electrons = self.protons
+        self.mass = mass
+        self.moles = None
+        if self.mass is not None:
+            self.moles = self.mass / self.molar_mass
         
     def __str__(self) -> str:
         return self.symbol
@@ -72,8 +79,8 @@ class Element:
 
 
 class Token(Element):
-    def __init__(self, element_str: str):
-        super().__init__(element_str)
+    def __init__(self, symbol: str):
+        super().__init__(symbol)
 
 
 #work on __eq__
@@ -214,10 +221,14 @@ class Compound:
         self.comp_str = comp_str
         self.subscripts: list[Subscript] = subscripts
         self.molar_mass = self.tokenized_comp.molar_mass
+        self.electrons = self._get_total_electrons()
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.tokens})"
     
+    def _get_total_electrons(self) -> int:
+        return sum(token.electrons * count for token, count in self.elements.items())
+
     def count(self, element) -> int:
         count = [count for e, count in Counter(self.tokens).items() if e == element]
         if len(count) == 0:

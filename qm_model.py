@@ -1,0 +1,112 @@
+from typing import Optional
+
+subshell_map = ['s', 'p', 'd', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o']
+special_subshells = ['d', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o']
+
+
+def total_electrons(l: int, all_electrons: int, proton_count: int) -> int:
+    electrons = 4*abs(l) + 2
+    excess = all_electrons + electrons - proton_count
+    if excess > 0:
+        electrons -= excess
+    if electrons <= 0:
+        return 0
+    return electrons
+
+
+def get_special_orbitals(
+        n: int, l: int,
+        left_over: list[tuple[int, str]],
+    ) -> tuple[bool, list[tuple[int, str]]]:
+    matches = [
+        (n_, s_) for n_, s_ in reversed(left_over)
+        if (n_ == n - 1 and s_ == subshell_map[l + 1]) or
+        (n_ == n - 2 and s_ == subshell_map[l + 2]) or
+        (n_ == n - 3 and s_ == subshell_map[l + 3])
+    ]
+    return len(matches) > 0, matches
+
+
+def get_electron_config(
+        protons: int,
+        pqn: int = 1,
+        left_over: Optional[list[tuple[int, str]]] = None,  # tuple[n, s]
+        e_config: Optional[list[str]] = None,
+        count: int = 0,
+    ) -> list[str]:
+    e_config = e_config or []
+
+    if protons == count:
+        return e_config
+
+    original_left_over = left_over.copy() if left_over is not None else None
+    shapes = [subshell_map[l] for l in range(pqn)]
+    left_over = [s for s in shapes if s in special_subshells]
+    shapes = sorted(set(shapes) - set(left_over), reverse=True)
+    left_over = [(pqn, l_) for l_ in left_over]
+    l_list = sorted(set(range(pqn)) - {2, 3, 4})
+
+    lanthanide_exceptions: list[tuple[int, str, int]] = []
+    five_f_exception = None
+    th_exception = None
+    lr_exception = None
+    for shape, aqn in zip(shapes, l_list):
+        if left_over != original_left_over and original_left_over is not None:
+            matches_exist, matches = get_special_orbitals(pqn, aqn, original_left_over)
+            if matches_exist:
+                for n, s in matches:
+                    l = [i for i, s_val in enumerate(subshell_map) if s_val == s][0]
+                    e = total_electrons(l, count, protons)
+                    count += e
+                    if n in (3, 4) and s in ('d', 'f') and e in (1, 2, 4, 8, 9):
+                        if s == 'd' and e in (4, 9):
+                            e_config[-1] = f'{pqn}s^1'
+                            e += 1
+                        elif n == 4 and s == 'f' and e in (1, 2, 8):
+                            lanthanide_exceptions.append((n, s, e))
+                            e -= 1
+                    if n == 5 and s in ('d', 'f') and e <= 9:
+                        if s == 'd' and e in (8, 9):
+                            e_config[-2] = '6s^1'
+                            e += 1
+                        elif n == 5 and s == 'f' and e in (1, 2, 3, 4, 5, 8):
+                            if e == 2:
+                                th_exception = True
+                                e -= 2
+                            else:
+                                five_f_exception = True
+                                e -= 1
+                    if n == 6 and s == 'd' and e == 1:
+                        lr_exception = True
+                        e = 0
+                    original_left_over.remove((n, s))
+                    if e:
+                        e_config.append(f'{n}{s}^{e}')
+        electrons = total_electrons(aqn, count, protons)
+        count += electrons
+        if electrons:
+            e_config.append(f'{pqn}{shape}^{electrons}')
+
+    if five_f_exception is not None:
+        e_config.append('6d^1')
+
+    if th_exception is not None:
+        e_config.append('6d^2')
+
+    if lr_exception is not None:
+        e_config.append('7p^1')
+
+    e_config.extend([n_+1 for n_, _, _ in lanthanide_exceptions])
+
+    left_over += original_left_over or []
+
+    return get_electron_config(protons, pqn+1, left_over, e_config, count)
+
+
+def main():
+    electron_config = get_electron_config(80)
+    print(' '.join(electron_config))
+
+
+if __name__ == '__main__':
+    main()
