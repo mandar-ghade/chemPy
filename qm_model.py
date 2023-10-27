@@ -96,15 +96,18 @@ def get_electron_config(
     if lr_exception is not None:
         e_config.append('7p^1')
 
-    e_config.extend([n_+1 for n_, _, _ in lanthanide_exceptions])
+    e_config.extend([f'{n_+1}d^1' for n_, _, _ in lanthanide_exceptions])
 
     left_over += original_left_over or []
 
     return get_electron_config(protons, pqn+1, left_over, e_config, count)
 
+def get_valence_electrons(electron_configuration: list[str]) -> int:
+    pass
+
 
 def main():
-    electron_config = get_electron_config(80)
+    electron_config = get_electron_config(58)
     print(' '.join(electron_config))
 
 
