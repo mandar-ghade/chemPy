@@ -1,5 +1,11 @@
 from typing import Optional
 
+MAX_SUBSHELL = {
+    's': 2, 
+    'p': 6, 
+    'd': 10, 
+    'f': 14
+}
 subshell_map = ['s', 'p', 'd', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o']
 special_subshells = ['d', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o']
 
@@ -102,12 +108,29 @@ def get_electron_config(
 
     return get_electron_config(protons, pqn+1, left_over, e_config, count)
 
-def get_valence_electrons(electron_configuration: list[str]) -> int:
-    pass
+
+def calculate_valence(segment: list[str]) -> int:
+    count = 0
+    for orbital in segment:
+        shape = orbital[1]
+        electrons = int(orbital[3:])
+        if (shape in special_subshells 
+            and electrons == MAX_SUBSHELL[shape]):
+            continue
+        count += electrons
+    return count
+
+
+def get_valence_electrons(e_cfg: list[str]) -> int:
+    pqns = [o for o in e_cfg if o[1] == 's']
+    max_pqn_s = e_cfg.index(pqns[-1])
+    segment = e_cfg[max_pqn_s:]
+    valence_es = calculate_valence(segment)
+    return valence_es
 
 
 def main():
-    electron_config = get_electron_config(58)
+    electron_config = get_electron_config(103)
     print(' '.join(electron_config))
 
 

@@ -1,5 +1,5 @@
 from collections import Counter
-from qm_model import get_electron_config
+from qm_model import get_electron_config, get_valence_electrons
 import fractions
 import json
 import os
@@ -59,7 +59,8 @@ class Element:
         self.symbol = symbol
         self.molar_mass = float(ELEMENT_ITEMS[self.symbol])
         self.protons = ELEMENT_PROTON_DATA[self.symbol]
-        self.electron_configuration = get_electron_config(self.protons)
+        self.e_cfg = get_electron_config(self.protons)
+        self.valence_electrons = get_valence_electrons(self.e_cfg)
         self.electrons = self.protons
         self.mass = mass
         self.moles = None
@@ -95,6 +96,7 @@ class Tokenize:
         self.elements: Optional[Counter[Token]] = None
         self.compound: tuple[list[Token], list[Subscript]] = self._parse_elements()
         self.molar_mass = self._get_molar_mass()
+        self.valence_electrons = self._get_valence_electrons() 
 
     def _nests_parenthesis(self, s, e) -> bool:
         return any(c in ALL_DELIMS
@@ -195,6 +197,10 @@ class Tokenize:
     def _get_molar_mass(self) -> float:
         return sum(token.molar_mass * count
                    for token, count in self.elements.items())
+    
+    def _get_valence_electrons(self) -> int:
+        return sum(token.valence_electrons * count 
+                   for token, count in self.elements.items())
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}({self.compound})'
@@ -222,6 +228,7 @@ class Compound:
         self.comp_str = comp_str
         self.subscripts: list[Subscript] = subscripts
         self.molar_mass = self.tokenized_comp.molar_mass
+        self.valence_electrons = self.tokenized_comp.valence_electrons
         self.electrons = self._get_total_electrons()
 
     def __repr__(self) -> str:
@@ -351,7 +358,7 @@ class Equation:
             print('Impossible equation')
             return self.coefficients
         args = solutions.args[0]
-        args: list = [fractions.Fraction(abs(arg)).limit_denominator() for arg in args]
+        args: list[fractions.Fraction] = [fractions.Fraction(abs(arg)).limit_denominator() for arg in args]
         denom_list = [frac.denominator for frac in args if frac.denominator != 1]
         if denom_list != []:
             while not all(arg.denominator == 1 for arg in args):
