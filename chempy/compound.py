@@ -5,7 +5,8 @@ from .subscript import Subscript
 from typing import Optional, Self
 
 class Compound:
-    def __init__(self, comp_str: str, tokens: list[Element] = None, subscripts: list[Subscript] = None):
+    def __init__(self, comp_str: str, tokens: list[Element] = None,
+                 subscripts: list[Subscript] = None):
         if tokens is None:
             tokens, subscripts = tokenize(comp_str)
         self.tokens = tokens
@@ -17,7 +18,7 @@ class Compound:
         self.electrons = self._get_total_electrons()
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.tokens})"
+        return f"{self.__class__.__name__}('{self.comp_str}', {self.tokens}, {self.subscripts})"
     
     def _get_total_electrons(self) -> int:
         return sum(token.electrons * count 

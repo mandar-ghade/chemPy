@@ -1,6 +1,9 @@
 from typing import Optional, Self
 class Subscript:
-    def __init__(self, comp_str: str, element_index = None, start_index = None, size = None):
+    def __init__(self, comp_str: str, 
+                 element_index: Optional[int] = None, 
+                 start_index: Optional[int] = None, 
+                 size: Optional[int] = None) -> None:
         assert isinstance(comp_str, str)
         self.comp_str = comp_str
         self.element_index = element_index
@@ -24,7 +27,7 @@ class Subscript:
         return [size, subs]
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}([element='{self.element_str}', subs={self.subs}, index={self.element_index}])"
+        return f"{self.__class__.__name__}(comp_str='{self.comp_str}', element_index={self.element_index}, start_index={self.start_index}, size={self.size})"
 
     def __hash__(self) -> int:
         return hash((self.element_str, self.subs, self.element_index))
