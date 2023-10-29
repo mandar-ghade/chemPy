@@ -130,8 +130,7 @@ def get_valence_electrons(e_cfg: list[str]) -> int:
 
 
 def main():
-    electron_config = get_electron_config(103)
-    print(' '.join(electron_config))
+    pass
 
 
 if __name__ == '__main__':
