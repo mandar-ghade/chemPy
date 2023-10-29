@@ -1,6 +1,6 @@
-from utils import tokenize
+from .utils import tokenize
 from .element import Element
-from Collections import Counter
+from collections import Counter
 from .subscript import Subscript
 from typing import Optional, Self
 

@@ -1,4 +1,3 @@
-from ..compound import Compound
 from ..data import *
 from ..element import Element
 from ..subscript import Subscript

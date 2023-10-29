@@ -1,4 +1,5 @@
 from .data import *
+from .qm_model import get_valence_electrons, get_electron_config
 from typing import Self
 
 
