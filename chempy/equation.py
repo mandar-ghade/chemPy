@@ -1,5 +1,6 @@
 from .compound import Compound
 from .element import Element
+from .utils import split_str
 from collections import Counter
 from string import ascii_lowercase
 import sympy as smp
@@ -7,6 +8,7 @@ from fractions import Fraction
 
 
 class Equation:
+    #parse_from_string method
     def __init__(self, reactants: list[Compound], products: list[Compound]):
         assert isinstance(reactants, list)
         assert isinstance(products, list)
@@ -116,3 +118,13 @@ class Equation:
             matrix.append(row)
         self.coefficients = self._get_coefficients(matrix)
         self.equation = self._equation()
+
+
+    @classmethod
+    def parse_from_string(cls, line):
+        reactants, products = line.split(split_str(line))
+        reactants = [Compound(reactant) 
+                     for reactant in reactants.split('+')]
+        products = [Compound(product) 
+                    for product in products.split('+')]
+        return cls(reactants, products)
