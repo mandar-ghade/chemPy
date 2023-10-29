@@ -1,5 +1,5 @@
 from collections import Counter
-from qm_model import get_electron_config, get_valence_electrons
+from old_qm_model import get_electron_config, get_valence_electrons
 import fractions
 import json
 import os
@@ -54,7 +54,7 @@ class Subscript:
 
 
 class Element:
-    def __init__(self, symbol: str, mass = None, amu = None):
+    def __init__(self, symbol: str, mass = None):
         assert isinstance(symbol, str)
         self.symbol = symbol
         self.molar_mass = float(ELEMENT_ITEMS[self.symbol])
@@ -80,12 +80,6 @@ class Element:
         return self.symbol == other.symbol
 
 
-class Token(Element):
-    def __init__(self, symbol: str):
-        super().__init__(symbol)
-
-
-#work on __eq__
 class Tokenize:
     def __init__(self, comp_str: str):
         assert isinstance(comp_str, str)
@@ -93,8 +87,9 @@ class Tokenize:
         self.index = 0
         self.multiplier_list = self._multipliers(0, len(self.comp_str))
         self.multipliers = [self._get_multiplier(n) for n in range(len(self.comp_str))]
-        self.elements: Optional[Counter[Token]] = None
-        self.compound: tuple[list[Token], list[Subscript]] = self._parse_elements()
+        self.elements: Optional[Counter[Element]] = None
+        self.compound: tuple[list[Element], list[Subscript]] = self._parse_elements()
+        self.tokens, _ = self.compound
         self.molar_mass = self._get_molar_mass()
         self.valence_electrons = self._get_valence_electrons() 
 
@@ -171,7 +166,7 @@ class Tokenize:
         multiplier_list = [multiplier for ldi, rdi, multiplier in self.multiplier_list if ldi <= n <= rdi]
         return multiplier_list[-1] if len(multiplier_list) > 0 else 1
     
-    def _parse_elements(self) -> tuple[list[Token], list[Subscript]]:
+    def _parse_elements(self) -> tuple[list[Element], list[Subscript]]:
         elements = []
         subs_list: list[Subscript] = []
         comp_str = self.comp_str
@@ -189,18 +184,18 @@ class Tokenize:
             element = comp_str[i:i+2] if two_letter else char
             subs_list.append(subscript)
             for _ in range(count * multiplier):
-                elements.append(Token(element))
+                elements.append(Element(element))
         self.elements = Counter(elements)
         self.subs_list = subs_list
         return (elements, subs_list)
     
     def _get_molar_mass(self) -> float:
-        return sum(token.molar_mass * count
-                   for token, count in self.elements.items())
+        return sum(element.molar_mass * count
+                   for element, count in self.elements.items())
     
     def _get_valence_electrons(self) -> int:
-        return sum(token.valence_electrons * count 
-                   for token, count in self.elements.items())
+        return sum(element.valence_electrons * count 
+                   for element, count in self.elements.items())
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}({self.compound})'
@@ -210,7 +205,7 @@ class Tokenize:
         return self
     
     def __next__(self) -> int:
-        tk = [token for i, token in enumerate(self.compound.tokens) if i == self.index]
+        tk = [token for i, token in enumerate(self.tokens) if i == self.index]
         if tk == []:
             raise StopIteration
         tk = tk[0]
@@ -219,7 +214,7 @@ class Tokenize:
 
 
 class Compound:
-    def __init__(self, comp_str: str, tokens: list[Token] = None, subscripts: list[Subscript] = None):
+    def __init__(self, comp_str: str, tokens: list[Element] = None, subscripts: list[Subscript] = None):
         self.tokenized_comp = Tokenize(comp_str)
         if tokens is None:
             tokens, subscripts = self.tokenized_comp.compound
@@ -321,7 +316,7 @@ class Equation:
     def __str__(self) -> str:
         return self.equation
     
-    def total_left(self) -> Counter[Token]:
+    def total_left(self) -> Counter[Element]:
         '''Returns total elements to the left of the equation (reactants).'''
         reactants = Counter()
         for reactant in self.reactants:
@@ -330,7 +325,7 @@ class Equation:
                 reactants[element] += count 
         return reactants
 
-    def total_right(self) -> Counter[Token]:
+    def total_right(self) -> Counter[Element]:
         '''Returns total elements to the right of the equation (products).'''
         products = Counter()
         for product in self.products:
@@ -339,11 +334,11 @@ class Equation:
                 products[element] += count 
         return products
 
-    def count_left(self, element: Token) -> list[int]:
+    def count_left(self, element: Element) -> list[int]:
         '''Counts occurances of an element out of all the reactants.'''
         return [compound.count(element) for compound in self.reactants]
 
-    def count_right(self, element: Token) -> list[int]:
+    def count_right(self, element: Element) -> list[int]:
         '''Counts occurances of an element out of all the products.'''
         return [compound.count(element) for compound in self.products]
     

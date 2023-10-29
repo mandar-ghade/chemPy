@@ -1,0 +1,3 @@
+LEFT_DELIMS = ['[', '(', '{']
+RIGHT_DELIMS = [']', ')', '}']
+ALL_DELIMS = LEFT_DELIMS + RIGHT_DELIMS
