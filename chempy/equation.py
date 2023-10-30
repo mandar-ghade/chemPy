@@ -20,13 +20,13 @@ class Equation:
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}([{self.reactants}], [{self.products}])"
 
-    def _center_str(self, inp: str, latex: bool) -> str:
-        return inp if latex in [None, False] else '\\text{' + inp + '}'
+    def _center_str(self, inp: int, latex: bool) -> str:
+        return str(inp) if latex in [None, False] else f'\\text{{{inp}}}'
 
     def _latex(self, inp: Compound, latex: bool) -> str:
         return inp.comp_str.strip() if latex in [None, False] else inp.latexify()  
 
-    def _equation(self, latex = None) -> str:
+    def _equation(self, latex: bool = False) -> str:
         return ' + '.join(
             [
                 self._center_str(coef, latex) + f'({self._latex(reactant, latex)})' 
@@ -80,16 +80,16 @@ class Equation:
         '''Counts occurances of an element out of all the products.'''
         return [compound.count(element) for compound in self.products]
     
-    def _get_coefficients(self, matrix: list) -> list:
+    def _get_coefficients(self, data: list[list[int]]) -> list[str]:
         '''Returns a list of coefficients, whose indices correspond to the positions of compounds in the given equation.'''
-        matrix = smp.Matrix(matrix)
+        matrix = smp.Matrix(data)
         length = matrix.shape[1]
-        solutions = smp.linsolve(matrix, [smp.Symbol(f'{ascii_lowercase[n]}') for n in range(length)])
-        for n in range(length):
-            solutions = solutions.subs(smp.Symbol(f'{ascii_lowercase[n]}'), 1)
+        symbols = [smp.Symbol(f'{ascii_lowercase[n]}') for n in range(length)]
+        solutions = smp.linsolve(matrix, symbols)
+        solutions = solutions.subs([(symbol, 1) for symbol in symbols])
         if solutions.args == ():
             print('Impossible equation')
-            return self.coefficients
+            return [f'{arg:,}' for arg in self.coefficients]
         args = solutions.args[0]
         args: list[Fraction] = [Fraction(abs(arg)).limit_denominator() for arg in args]
         denom_list = [frac.denominator for frac in args if frac.denominator != 1]
@@ -97,8 +97,7 @@ class Equation:
             while not all(arg.denominator == 1 for arg in args):
                 denom_list = [frac.denominator for frac in args if frac.denominator != 1]
                 args = [arg * max(denom_list) for arg in args]
-        args = [f'{arg.numerator:,}' for arg in args]
-        return args
+        return [f'{arg.numerator:,}' for arg in args]
 
     def balance(self) -> None:
         '''Balances the chemical equation.'''
@@ -121,7 +120,7 @@ class Equation:
 
 
     @classmethod
-    def parse_from_string(cls, line):
+    def parse_from_string(cls, line: str):
         reactants, products = line.split(split_str(line))
         reactants = [Compound(reactant) 
                      for reactant in reactants.split('+')]
