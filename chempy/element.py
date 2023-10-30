@@ -1,10 +1,10 @@
 from .data import *
 from .qm_model import get_valence_electrons, get_electron_config
-from typing import Self
+from typing import Optional, Self
 
 
 class Element:
-    def __init__(self, symbol: str, mass = None):
+    def __init__(self, symbol: str, mass: Optional[float] = None):
         assert isinstance(symbol, str)
         self.symbol = symbol
         self.molar_mass = float(ELEMENT_ITEMS[self.symbol])
@@ -12,6 +12,7 @@ class Element:
         self.e_cfg = get_electron_config(self.protons)
         self.electron_configuration = ' '.join(str(o) for o in self.e_cfg)
         self.valence_electrons = get_valence_electrons(self.e_cfg)
+        self.electronegativity: Optional[float] = ELECTRONEGATIVITY_DATA(self.protons)
         self.electrons = self.protons
         self.mass = mass
         self.moles = None

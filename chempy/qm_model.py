@@ -56,7 +56,7 @@ def get_electron_config(
                 for s_o in matches:
                     e_ = total_electrons(s_o.l, count, protons)
                     count += e_
-                    if s_o.n in (3, 4) and s_o.shape in ('d', 'f') and e_ in (1, 2, 4, 8, 9):
+                    if s_o.n in (3, 4) and s_o.shape in ('d', 'f') and e_ in (1, 2, 4, 8, 9): # check these within orbital class
                         if s_o.shape == 'd' and e_ in (4, 9):
                             e_config[-1].n = pqn
                             e_config[-1].electrons = 1
