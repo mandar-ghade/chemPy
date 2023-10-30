@@ -1,29 +1,6 @@
-from typing import Optional, Literal
-
-type Shape = Literal['s', 'p', 'd', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o']
-MAX_SUBSHELL = {
-    's': 2, 
-    'p': 6, 
-    'd': 10, 
-    'f': 14
-}
-SUBSHELL_MAP: list[Shape] = ['s', 'p', 'd', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o']
-SPECIAL_SUBSHELLS: list[Shape] = ['d', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o']
-
-
-class Orbital:
-    def __init__(self, n: int, l: int, electrons: int) -> None:
-        self.n = n
-        self.l = l
-        self.electrons = electrons
-        self.shape = SUBSHELL_MAP[l]
-
-    def __repr__(self) -> str:
-        return f'{self.__class__.__name__}({self.n}, {self.l}, {self.electrons})'
-    
-    def __str__(self) -> str:
-        return f'{self.n}{self.shape}^{self.electrons}'
-    
+from typing import Optional
+from .data import MAX_SUBSHELL, SUBSHELL_MAP, SPECIAL_SUBSHELLS
+from .orbital import Orbital
 
 def total_electrons(l: int, all_electrons: int, proton_count: int) -> int:
     electrons = 4*abs(l) + 2
@@ -37,98 +14,104 @@ def total_electrons(l: int, all_electrons: int, proton_count: int) -> int:
 
 def get_special_orbitals(
         n: int, l: int,
-        left_over: list[tuple[int, str]],
-    ) -> tuple[bool, list[tuple[int, str]]]:
+        left_over: list[Orbital],
+    ) -> tuple[bool, list[Orbital]]:
     matches = [
-        (n_, s_) for n_, s_ in reversed(left_over)
-        if (n_ == n - 1 and s_ == SUBSHELL_MAP[l + 1]) or
-        (n_ == n - 2 and s_ == SUBSHELL_MAP[l + 2]) or
-        (n_ == n - 3 and s_ == SUBSHELL_MAP[l + 3])
+        o for o in reversed(left_over)
+        if (o.n == n - 1 and o.shape == SUBSHELL_MAP[l + 1]) or
+        (o.n == n - 2 and o.shape == SUBSHELL_MAP[l + 2]) or
+        (o.n == n - 3 and o.shape == SUBSHELL_MAP[l + 3])
     ]
-    return len(matches) > 0, matches
+    return (len(matches) > 0, matches)
 
 
 def get_electron_config(
         protons: int,
         pqn: int = 1,
-        left_over: Optional[list[tuple[int, str]]] = None,  # tuple[n, s]
-        e_config: Optional[list[str]] = None,
+        left_over: Optional[list[Orbital]] = None,
+        e_config: Optional[list[Orbital]] = None,
         count: int = 0,
-    ) -> list[str]:
+    ) -> list[Orbital]:
+
     e_config = e_config or []
 
     if protons == count:
         return e_config
 
-    original_left_over = left_over.copy() if left_over is not None else None
-    shapes = [SUBSHELL_MAP[l] for l in range(pqn)]
-    left_over = [s for s in shapes if s in SPECIAL_SUBSHELLS]
-    shapes = sorted(set(shapes) - set(left_over), reverse=True)
-    left_over = [(pqn, l_) for l_ in left_over]
-    l_list = sorted(set(range(pqn)) - {2, 3, 4})
+    _left_over: Optional[list[Orbital]] = left_over.copy() if left_over is not None else None
 
-    lanthanide_exceptions: list[tuple[int, str, int]] = []
+    orbitals: list[Orbital] = [Orbital(pqn, l, None) for l in range(pqn)]
+    non_special_orbitals: list[Orbital] = [orbital for orbital in orbitals if not orbital.is_special]
+    new_left_overs: list[Orbital] = list(set(orbitals).difference(non_special_orbitals))
+
+    lanthanide_exceptions: list[Orbital] = []
     five_f_exception = None
     th_exception = None
     lr_exception = None
-    for shape, aqn in zip(shapes, l_list):
-        if left_over != original_left_over and original_left_over is not None:
-            matches_exist, matches = get_special_orbitals(pqn, aqn, original_left_over)
+
+    for orbital in non_special_orbitals:
+        if new_left_overs != _left_over and _left_over is not None:
+            matches_exist, matches = get_special_orbitals(orbital.n, orbital.l, _left_over)
             if matches_exist:
-                for n, s in matches:
-                    l = [i for i, s_val in enumerate(SUBSHELL_MAP) if s_val == s][0]
-                    e = total_electrons(l, count, protons)
-                    count += e
-                    if n in (3, 4) and s in ('d', 'f') and e in (1, 2, 4, 8, 9):
-                        if s == 'd' and e in (4, 9):
-                            e_config[-1] = f'{pqn}s^1'
-                            e += 1
-                        elif n == 4 and s == 'f' and e in (1, 2, 8):
-                            lanthanide_exceptions.append((n, s, e))
-                            e -= 1
-                    if n == 5 and s in ('d', 'f') and e <= 9:
-                        if s == 'd' and e in (8, 9):
-                            e_config[-2] = '6s^1'
-                            e += 1
-                        elif n == 5 and s == 'f' and e in (1, 2, 3, 4, 5, 8):
-                            if e == 2:
+                for s_o in matches:
+                    e_ = total_electrons(s_o.l, count, protons)
+                    count += e_
+                    if s_o.n in (3, 4) and s_o.shape in ('d', 'f') and e_ in (1, 2, 4, 8, 9):
+                        if s_o.shape == 'd' and e_ in (4, 9):
+                            e_config[-1].n = pqn
+                            e_config[-1].electrons = 1
+                            e_ += 1
+                        elif s_o.n == 4 and s_o.shape == 'f' and e_ in (1, 2, 8):
+                            lanthanide_exceptions.append(s_o)
+                            e_ -= 1
+                    if s_o.n == 5 and s_o.shape in ('d', 'f') and (e_ is not None and e_ <= 9):
+                        if s_o.shape == 'd' and e_ in (8, 9):
+                            e_config[-2].n = 6
+                            e_config[-2].shape = 's'
+                            e_config[-2].electrons = 1
+                        elif s_o.n == 5 and s_o.shape == 'f' and e_ in (1, 2, 3, 4, 5, 8):
+                            if e_ == 2:
                                 th_exception = True
-                                e -= 2
+                                e_ -= 2
                             else:
                                 five_f_exception = True
-                                e -= 1
-                    if n == 6 and s == 'd' and e == 1:
+                                e_ -= 1
+                    if s_o.n == 6 and s_o.shape == 'd' and e_ == 1:
                         lr_exception = True
-                        e = 0
-                    original_left_over.remove((n, s))
-                    if e:
-                        e_config.append(f'{n}{s}^{e}')
-        electrons = total_electrons(aqn, count, protons)
+                        e_ = 0
+                    _left_over.remove(s_o)
+                    if e_:
+                        s_o.electrons = e_
+                        e_config.append(s_o)
+        electrons = total_electrons(orbital.l, count, protons)
         count += electrons
         if electrons:
-            e_config.append(f'{pqn}{shape}^{electrons}')
-
+            orbital.electrons = electrons
+            e_config.append(orbital)
+    
     if five_f_exception is not None:
-        e_config.append('6d^1')
+        e_config.append(Orbital(6, 2, 1))
 
     if th_exception is not None:
-        e_config.append('6d^2')
+        e_config.append(Orbital(6, 2, 2))
 
     if lr_exception is not None:
-        e_config.append('7p^1')
+        e_config.append(Orbital(7, 1, 1))
 
-    e_config.extend([f'{n_+1}d^1' for n_, _, _ in lanthanide_exceptions])
+    e_config.extend(Orbital(le.n+1, 2, 1) for le in lanthanide_exceptions)
 
-    left_over += original_left_over or []
+    new_left_overs += _left_over or []
 
-    return get_electron_config(protons, pqn+1, left_over, e_config, count)
+    return get_electron_config(protons, pqn+1, new_left_overs, e_config, count)
 
 
-def calculate_valence(segment: list[str]) -> int:
+def calculate_valence(segment: list[Orbital]) -> int:
     count = 0
     for orbital in segment:
-        shape = orbital[1]
-        electrons = int(orbital[3:])
+        shape = orbital.shape
+        electrons = orbital.electrons
+        if electrons is None:
+            continue
         if (shape in SPECIAL_SUBSHELLS 
             and electrons == MAX_SUBSHELL[shape]):
             continue
@@ -136,8 +119,8 @@ def calculate_valence(segment: list[str]) -> int:
     return count
 
 
-def get_valence_electrons(e_cfg: list[str]) -> int:
-    pqns = [o for o in e_cfg if o[1] == 's']
+def get_valence_electrons(e_cfg: list[Orbital]) -> int:
+    pqns = [o for o in e_cfg if o.shape == 's']
     max_pqn_s_index = e_cfg.index(pqns[-1])
     segment = e_cfg[max_pqn_s_index:]
     valence_es = calculate_valence(segment)
@@ -145,7 +128,7 @@ def get_valence_electrons(e_cfg: list[str]) -> int:
 
 
 def main():
-    pass
+    print(get_valence_electrons(get_electron_config(86)))
 
 
 if __name__ == '__main__':

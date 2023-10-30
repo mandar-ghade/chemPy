@@ -10,6 +10,7 @@ class Element:
         self.molar_mass = float(ELEMENT_ITEMS[self.symbol])
         self.protons = ELEMENT_PROTON_DATA[self.symbol]
         self.e_cfg = get_electron_config(self.protons)
+        self.electron_configuration = ' '.join(str(o) for o in self.e_cfg)
         self.valence_electrons = get_valence_electrons(self.e_cfg)
         self.electrons = self.protons
         self.mass = mass
