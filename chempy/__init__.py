@@ -13,15 +13,15 @@ from .data import (
 )
 
 __all__ = [
-    Element, 
-    Compound, 
-    Equation,
-    Subscript,
-    LEFT_DELIMS, 
-    RIGHT_DELIMS, 
-    ALL_DELIMS, 
-    ELEMENTS_PATH, 
-    ELEMENT_ITEMS, 
-    ELEMENT_PROTON_DATA, 
-    ELEMENTS
+    'Element', 
+    'Compound', 
+    'Equation',
+    'Subscript',
+    'LEFT_DELIMS', 
+    'RIGHT_DELIMS', 
+    'ALL_DELIMS', 
+    'ELEMENTS_PATH', 
+    'ELEMENT_ITEMS', 
+    'ELEMENT_PROTON_DATA', 
+    'ELEMENTS'
 ]

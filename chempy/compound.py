@@ -24,7 +24,7 @@ class Compound:
         return sum(token.electrons * count 
                    for token, count in self.elements.items())
     
-    def _get_molar_mass(self) -> int:
+    def _get_molar_mass(self) -> float:
         return sum(token.molar_mass  * count 
                    for token, count in self.elements.items())
     

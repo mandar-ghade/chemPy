@@ -20,7 +20,7 @@ def get_element_count(comp_str: str, start: int) -> tuple[int, bool]:
     if subs == '':
         subs = 1
         no_subscript = True
-    return [int(subs), no_subscript]
+    return int(subs), no_subscript
 
 
 def matching_delim_index(delim_list: list, delim: str) -> Optional[int]:
@@ -31,11 +31,11 @@ def matching_delim_index(delim_list: list, delim: str) -> Optional[int]:
     return None
 
 
-def retrieve_delims(comp_str: str, ldi: int = None, rdi: int = None) -> tuple[int, int]:
+def retrieve_delims(comp_str: str, ldi: Optional[int] = None, rdi: Optional[int] = None) -> tuple[Optional[int], Optional[int]]:
     right_count = 0
     right_delim = None
-    if ldi is None and rdi is None:
-        return [None, None]
+    if ldi is None and rdi is not None:
+        return None, None
     ld, rd = None, None
     for i in range(ldi, rdi):
         c = comp_str[i]
@@ -55,7 +55,7 @@ def retrieve_delims(comp_str: str, ldi: int = None, rdi: int = None) -> tuple[in
 
 
 def fetch_multiplier_list(comp_str: str, ldi: int, rdi: int, subs = None, 
-                          p_list: list = None) -> list[tuple[int, int, int]]:
+                          p_list: Optional[list] = None) -> list[tuple[int, int, int]]:
     if subs is None:
         subs = 1
     if p_list is None:
@@ -81,7 +81,7 @@ def fetch_multiplier_list(comp_str: str, ldi: int, rdi: int, subs = None,
 
 
 def get_multiplier(multiplier_list: list[tuple[int, int, int]], n: int) -> int:
-    multiplier_list = [multiplier
+    multiplier_list: list[int] = [multiplier
                        for ldi, rdi, multiplier in multiplier_list 
                        if ldi <= n <= rdi]
     return multiplier_list[-1] if len(multiplier_list) > 0 else 1

@@ -13,7 +13,7 @@ class Subscript:
         self.element_str = self.comp_str[element_index:start_index]
         self.size, self.subs = self._get_sizes()
 
-    def _get_sizes(self) -> list[int, Optional[int]]:
+    def _get_sizes(self) -> tuple[int, Optional[int]]:
         size = ''
         for n in range(self.start_index, len(self.comp_str)+1):
             digit = self.comp_str[n:n+1]
@@ -24,7 +24,7 @@ class Subscript:
         if size == '':
             size = 1
         size = int(size)
-        return [size, subs]
+        return size, subs
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(comp_str='{self.comp_str}', element_index={self.element_index}, start_index={self.start_index}, size={self.size})"

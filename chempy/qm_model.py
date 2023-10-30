@@ -1,14 +1,14 @@
 from typing import Optional, Literal
 
-# type Shape = Literal['s', 'p', 'd', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o']
+type Shape = Literal['s', 'p', 'd', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o']
 MAX_SUBSHELL = {
     's': 2, 
     'p': 6, 
     'd': 10, 
     'f': 14
 }
-SUBSHELL_MAP = ['s', 'p', 'd', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o']
-SPECIAL_SUBSHELLS = ['d', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o']
+SUBSHELL_MAP: list[Shape] = ['s', 'p', 'd', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o']
+SPECIAL_SUBSHELLS: list[Shape] = ['d', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o']
 
 
 class Orbital:
