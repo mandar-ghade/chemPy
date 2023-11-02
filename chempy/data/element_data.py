@@ -8,7 +8,7 @@ ELEMENTS_PATH = os.path.dirname(os.path.realpath(__file__)) + '/elements.json'
 ELEMENT_INFO_PATH = os.path.dirname(os.path.realpath(__file__)) + '/element_info.csv'
 ELEMENT_CSV_DATA = pd.read_csv(ELEMENT_INFO_PATH)
 df: pd.DataFrame = pd.DataFrame(ELEMENT_CSV_DATA)
-ELECTRONEGATIVITY_DATA: Optional[float] = lambda protons : (
+electronegativity_data: Optional[float] = lambda protons : (
     dt.item() 
     if not (
         dt := (df.loc[df['AtomicNumber'] == protons, 'Electronegativity'])

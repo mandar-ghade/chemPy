@@ -31,7 +31,11 @@ def matching_delim_index(delim_list: list, delim: str) -> Optional[int]:
     return None
 
 
-def retrieve_delims(comp_str: str, ldi: Optional[int] = None, rdi: Optional[int] = None) -> tuple[Optional[int], Optional[int]]:
+def retrieve_delims(
+    comp_str: str, 
+    ldi: Optional[int] = None,
+    rdi: Optional[int] = None,
+) -> tuple[Optional[int], Optional[int]]:
     right_count = 0
     right_delim = None
     if ldi is None and rdi is not None:

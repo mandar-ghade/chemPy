@@ -8,7 +8,6 @@ from fractions import Fraction
 
 
 class Equation:
-    #parse_from_string method
     def __init__(self, reactants: list[Compound], products: list[Compound]):
         assert isinstance(reactants, list)
         assert isinstance(products, list)

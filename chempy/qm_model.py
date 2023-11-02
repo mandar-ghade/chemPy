@@ -35,10 +35,11 @@ def get_electron_config(
 
     e_config = e_config or []
 
-    if protons == count:
+    if protons == count: 
         return e_config
 
-    _left_over: Optional[list[Orbital]] = left_over.copy() if left_over is not None else None
+    _left_over: Optional[list[Orbital]] = left_over.copy() \
+        if left_over is not None else None
 
     orbitals: list[Orbital] = [Orbital(pqn, l, None) for l in range(pqn)]
     non_special_orbitals: list[Orbital] = [orbital for orbital in orbitals if not orbital.is_special]
@@ -56,27 +57,24 @@ def get_electron_config(
                 for s_o in matches:
                     e_ = total_electrons(s_o.l, count, protons)
                     count += e_
-                    if s_o.n in (3, 4) and s_o.shape in ('d', 'f') and e_ in (1, 2, 4, 8, 9): # check these within orbital class
-                        if s_o.shape == 'd' and e_ in (4, 9):
-                            e_config[-1].n = pqn
-                            e_config[-1].electrons = 1
-                            e_ += 1
-                        elif s_o.n == 4 and s_o.shape == 'f' and e_ in (1, 2, 8):
-                            lanthanide_exceptions.append(s_o)
-                            e_ -= 1
-                    if s_o.n == 5 and s_o.shape in ('d', 'f') and (e_ is not None and e_ <= 9):
-                        if s_o.shape == 'd' and e_ in (8, 9):
-                            e_config[-2].n = 6
-                            e_config[-2].shape = 's'
-                            e_config[-2].electrons = 1
-                        elif s_o.n == 5 and s_o.shape == 'f' and e_ in (1, 2, 3, 4, 5, 8):
-                            if e_ == 2:
-                                th_exception = True
-                                e_ -= 2
-                            else:
-                                five_f_exception = True
-                                e_ -= 1
-                    if s_o.n == 6 and s_o.shape == 'd' and e_ == 1:
+                    if s_o.is_unstable_transition_metal(e_):
+                        e_config[-1].n = pqn
+                        e_config[-1].electrons = 1
+                        e_ += 1
+                    elif s_o.is_lanthanide_exception(e_):
+                        lanthanide_exceptions.append(s_o)
+                        e_ -= 1
+                    elif s_o.is_five_d_exception(e_):
+                        e_config[-2].n = 6
+                        e_config[-2].shape = 's'
+                        e_config[-2].electrons = 1
+                    elif s_o.is_th_exception(e_):
+                        th_exception = True
+                        e_ -= 2
+                    elif s_o.is_five_f_exception(e_):
+                        five_f_exception = True
+                        e_ -= 1
+                    elif s_o.is_lr_exception(e_):
                         lr_exception = True
                         e_ = 0
                     _left_over.remove(s_o)
@@ -128,7 +126,7 @@ def get_valence_electrons(e_cfg: list[Orbital]) -> int:
 
 
 def main():
-    print(get_valence_electrons(get_electron_config(86)))
+    pass
 
 
 if __name__ == '__main__':

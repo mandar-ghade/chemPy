@@ -12,7 +12,7 @@ class Element:
         self.e_cfg = get_electron_config(self.protons)
         self.electron_configuration = ' '.join(str(o) for o in self.e_cfg)
         self.valence_electrons = get_valence_electrons(self.e_cfg)
-        self.electronegativity: Optional[float] = ELECTRONEGATIVITY_DATA(self.protons)
+        self.electronegativity: Optional[float] = electronegativity_data(self.protons)     # type: ignore        
         self.electrons = self.protons
         self.mass = mass
         self.moles = None
