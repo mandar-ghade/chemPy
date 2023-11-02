@@ -24,25 +24,19 @@ class Orbital:
         return hash(self) == hash(other)
 
     def is_lr_exception(self, electrons: int) -> bool:
-        assert isinstance(electrons, int)
         return self.n == 6 and self.l == 2 and electrons == 1
 
     def is_th_exception(self, electrons: int) -> bool:
-        assert isinstance(electrons, int)
         return self.n == 5 and self.l == 3 and electrons == 2
 
     def is_five_f_exception(self, electrons: int) -> bool:
-        assert isinstance(electrons, int)
         return self.n == 5 and self.l == 3 and electrons in (1, 3, 4, 5, 8)
 
     def is_five_d_exception(self, electrons: int) -> bool:
-        assert isinstance(electrons, int)
         return self.n == 5 and self.l == 2 and electrons in (8, 9)
 
     def is_unstable_transition_metal(self, electrons: int) -> bool:
-        assert isinstance(electrons, int)
         return self.n == 3 and self.l == 2 and electrons in (4, 9)
 
     def is_lanthanide_exception(self, electrons: int) -> bool:
-        assert isinstance(electrons, int)
         return self.n == 4 and self.l == 3 and electrons in (1, 2, 8)
