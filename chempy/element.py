@@ -35,7 +35,7 @@ class Element:
         if isinstance(other, self.__class__):
             return Compound(self.symbol + other.symbol)
         elif isinstance(other, Compound):
-            return Compound(other.comp_str + self.symbol)
+            return Compound(self.symbol + other.comp_str)
 
     def __mul__(self, other: int):
         assert isinstance(other, int)

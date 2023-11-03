@@ -28,6 +28,10 @@ class Compound:
             return Compound(self.comp_str + other.symbol)
         elif isinstance(other, self.__class__):
             return Compound(self.comp_str + other.comp_str)
+        
+    def __mul__(self, other: int):
+        assert isinstance(other, int)
+        return Compound(f'[{self.comp_str}]{other}')
 
     def _get_total_electrons(self) -> int:
         return sum(token.electrons * count 
