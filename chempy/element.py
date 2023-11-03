@@ -23,9 +23,14 @@ class Element:
         return self.symbol
 
     def __add__(self, other: Self):
-        assert isinstance(other, self.__class__)
         from .compound import Compound
-        return Compound(self.symbol + other.symbol)
+        if not isinstance(other, self.__class__) and \
+            not isinstance(other, Compound):
+            return TypeError(f'Expected `Compound` or `Element` for `other` argument but received {other.__class__}')
+        if isinstance(other, self.__class__):
+            return Compound(self.symbol + other.symbol)
+        elif isinstance(other, Compound):
+            return Compound(other.comp_str + self.symbol)
 
     def __mul__(self, other: int):
         assert isinstance(other, int)
