@@ -5,6 +5,11 @@ from typing import Optional, Self
 
 class Element:
     def __init__(self, symbol: str, mass: Optional[float] = None):
+        if not isinstance(symbol, str):
+            raise TypeError('Expected `str` for `symbol` argument but received '
+                            f'`{symbol.__class__.__name__}` instead.')
+        if symbol not in ELEMENTS:
+            raise ValueError(f'"{symbol}" is not a valid `Element`.')
         assert isinstance(symbol, str)
         self.symbol = symbol
         self.molar_mass = float(ELEMENT_ITEMS[self.symbol])
@@ -26,7 +31,7 @@ class Element:
         from .compound import Compound
         if not isinstance(other, self.__class__) and \
             not isinstance(other, Compound):
-            return TypeError(f'Expected `Compound` or `Element` for `other` argument but received {other.__class__}')
+            raise TypeError(f'Expected `Compound` or `Element` for `other` argument but received {other.__class__.__name__}')
         if isinstance(other, self.__class__):
             return Compound(self.symbol + other.symbol)
         elif isinstance(other, Compound):

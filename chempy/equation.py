@@ -9,8 +9,12 @@ from fractions import Fraction
 
 class Equation:
     def __init__(self, reactants: list[Compound], products: list[Compound]):
-        assert isinstance(reactants, list)
-        assert isinstance(products, list)
+        if not isinstance(reactants, list):
+            raise TypeError('Expected `list[Compound]` for `reactants` argument but received '
+                            f'`{reactants.__class__.__name__}` instead.')
+        if not isinstance(products, list):
+            raise TypeError('Expected `list[Compound]` for `products` argument but received '
+                            f'`{products.__class__.__name__}` instead.')
         self.reactants = reactants
         self.products = products
         self.coefficients = [1 for _ in range(len(self.reactants) + len(self.products))]

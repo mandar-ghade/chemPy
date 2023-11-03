@@ -5,8 +5,11 @@ from .subscript import Subscript
 from typing import Optional, Self
 
 class Compound:
-    def __init__(self, comp_str: str, tokens: list[Element] = None,
-                 subscripts: list[Subscript] = None):
+    def __init__(self, comp_str: str, tokens: Optional[list[Element]] = None,
+                 subscripts: Optional[list[Subscript]] = None):
+        if not isinstance(comp_str, str):
+            raise TypeError('Expected `str` for `comp_str` argument but received '
+                            f'`{comp_str.__class__.__name__}` instead.')
         if tokens is None:
             tokens, subscripts = tokenize(comp_str)
         self.tokens = tokens

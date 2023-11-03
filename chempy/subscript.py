@@ -4,7 +4,9 @@ class Subscript:
                  element_index: Optional[int] = None, 
                  start_index: Optional[int] = None, 
                  size: Optional[int] = None) -> None:
-        assert isinstance(comp_str, str)
+        if not isinstance(comp_str, str):
+            raise TypeError('Expected `str` for `comp_str` argument but received '
+                            f'`{comp_str.__class__.__name__}` instead.')
         self.comp_str = comp_str
         self.element_index = element_index
         if start_index is None and size is None:
