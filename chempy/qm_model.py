@@ -121,8 +121,8 @@ def get_valence_electrons(e_cfg: list[Orbital]) -> int:
     pqns = [o for o in e_cfg if o.shape == 's']
     max_pqn_s_index = e_cfg.index(pqns[-1])
     segment = e_cfg[max_pqn_s_index:]
-    valence_es = calculate_valence(segment)
-    return valence_es
+    valence_electrons = calculate_valence(segment)
+    return valence_electrons
 
 
 def main():

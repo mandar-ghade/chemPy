@@ -45,7 +45,7 @@ def retrieve_delims(
         c = comp_str[i]
         if c in LEFT_DELIMS and ld is None and rd is None:
             ld = i
-            right_delim = RIGHT_DELIMS[matching_delim_index(LEFT_DELIMS, c)]
+            right_delim: str = RIGHT_DELIMS[matching_delim_index(LEFT_DELIMS, c)]
             continue
         if c in LEFT_DELIMS:
             right_count -= 1
@@ -58,8 +58,13 @@ def retrieve_delims(
     return (ld, rd)
 
 
-def fetch_multiplier_list(comp_str: str, ldi: int, rdi: int, subs = None, 
-                          p_list: Optional[list] = None) -> list[tuple[int, int, int]]:
+def fetch_multiplier_list(
+        comp_str: str,
+        ldi: Optional[int],
+        rdi: Optional[int], 
+        subs = None,
+        p_list: Optional[list] = None,
+) -> list[tuple[int, int, int]]:
     if subs is None:
         subs = 1
     if p_list is None:
@@ -86,7 +91,7 @@ def fetch_multiplier_list(comp_str: str, ldi: int, rdi: int, subs = None,
 
 def get_multiplier(multiplier_list: list[tuple[int, int, int]], n: int) -> int:
     multiplier_list: list[int] = [multiplier
-                       for ldi, rdi, multiplier in multiplier_list 
+                       for ldi, rdi, multiplier in multiplier_list
                        if ldi <= n <= rdi]
     return multiplier_list[-1] if len(multiplier_list) > 0 else 1
 
@@ -97,7 +102,6 @@ def tokenize(comp_str: str) -> tuple[list[Element], list[Subscript]]:
     multiplier_list = fetch_multiplier_list(comp_str, 0, len(comp_str))
     multipliers = [get_multiplier(multiplier_list, n) for n in range(len(comp_str))]
     for i, char in enumerate(comp_str):
-        multiplier = multipliers[i]
         if char in ALL_DELIMS:
             subscript = Subscript(comp_str, i, i + 1)
             subs_list.append(subscript)
@@ -109,6 +113,6 @@ def tokenize(comp_str: str) -> tuple[list[Element], list[Subscript]]:
         count = subscript.size
         element = comp_str[i:i+2] if two_letter else char
         subs_list.append(subscript)
-        for _ in range(count * multiplier):
+        for _ in range(count * multipliers[i]):
             elements.append(Element(element))
     return (elements, subs_list)

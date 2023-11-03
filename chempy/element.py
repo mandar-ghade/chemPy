@@ -21,6 +21,16 @@ class Element:
         
     def __str__(self) -> str:
         return self.symbol
+
+    def __add__(self, other: Self):
+        assert isinstance(other, self.__class__)
+        from .compound import Compound
+        return Compound(self.symbol + other.symbol)
+
+    def __mul__(self, other: int):
+        assert isinstance(other, int)
+        from .compound import Compound
+        return Compound(f'{self.symbol}{other}')
     
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}('{self.symbol}')"

@@ -1,6 +1,6 @@
 from .utils import tokenize
-from .element import Element
 from collections import Counter
+from .element import Element
 from .subscript import Subscript
 from typing import Optional, Self
 
@@ -19,7 +19,13 @@ class Compound:
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}('{self.comp_str}', {self.tokens}, {self.subscripts})"
-    
+
+    def __add__(self, other: Self):
+        if isinstance(other, Element):
+            return Compound(self.comp_str + other.symbol)
+        elif isinstance(other, self.__class__):
+            return Compound(self.comp_str + other.comp_str)
+
     def _get_total_electrons(self) -> int:
         return sum(token.electrons * count 
                    for token, count in self.elements.items())
