@@ -78,4 +78,4 @@ class Compound:
 
 
     def __eq__(self, other: Self) -> bool:
-        return self.tokens == other.tokens
+        return sorted(self.tokens, key=str) == sorted(other.tokens, key=str)
