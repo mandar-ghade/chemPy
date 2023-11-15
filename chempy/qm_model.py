@@ -2,6 +2,7 @@ from typing import Optional
 from .data import MAX_SUBSHELL, SUBSHELL_MAP, SPECIAL_SUBSHELLS
 from .orbital import Orbital
 
+
 def total_electrons(l: int, all_electrons: int, proton_count: int) -> int:
     electrons = 4*abs(l) + 2
     excess = all_electrons + electrons - proton_count
@@ -57,26 +58,27 @@ def get_electron_config(
                 for s_o in matches:
                     e_ = total_electrons(s_o.l, count, protons)
                     count += e_
-                    if s_o.is_unstable_transition_metal(e_):
-                        e_config[-1].n = pqn
-                        e_config[-1].electrons = 1
-                        e_ += 1
-                    elif s_o.is_lanthanide_exception(e_):
-                        lanthanide_exceptions.append(s_o)
-                        e_ -= 1
-                    elif s_o.is_five_d_exception(e_):
-                        e_config[-2].n = 6
-                        e_config[-2].shape = 's'
-                        e_config[-2].electrons = 1
-                    elif s_o.is_th_exception(e_):
-                        th_exception = True
-                        e_ -= 2
-                    elif s_o.is_five_f_exception(e_):
-                        five_f_exception = True
-                        e_ -= 1
-                    elif s_o.is_lr_exception(e_):
-                        lr_exception = True
-                        e_ = 0
+                    match s_o.exception(e_):
+                        case 'utm':
+                            e_config[-1].n = pqn
+                            e_config[-1].electrons = 1
+                            e_ += 1
+                        case 'lanthanide':
+                            lanthanide_exceptions.append(s_o)
+                            e_ -= 1
+                        case '5d':
+                            e_config[-2].n = 6
+                            e_config[-2].shape = 's'
+                            e_config[-2].electrons = 1
+                        case 'th':
+                            th_exception = True
+                            e_ -= 2
+                        case '5f':
+                            five_f_exception = True
+                            e_ -= 1
+                        case 'lr':
+                            lr_exception = True
+                            e_ = 0
                     _left_over.remove(s_o)
                     if e_:
                         s_o.electrons = e_
@@ -123,11 +125,3 @@ def get_valence_electrons(e_cfg: list[Orbital]) -> int:
     segment = e_cfg[max_pqn_s_index:]
     valence_electrons = calculate_valence(segment)
     return valence_electrons
-
-
-def main():
-    pass
-
-
-if __name__ == '__main__':
-    main()

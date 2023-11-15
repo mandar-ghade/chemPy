@@ -37,15 +37,19 @@ def retrieve_delims(
     rdi: Optional[int] = None,
 ) -> tuple[Optional[int], Optional[int]]:
     right_count = 0
-    right_delim = None
+    right_delim: Optional[str] = None
     if ldi is None and rdi is not None:
         return None, None
+    assert (isinstance(ldi, int) and isinstance(rdi, int))
     ld, rd = None, None
     for i in range(ldi, rdi):
         c = comp_str[i]
         if c in LEFT_DELIMS and ld is None and rd is None:
             ld = i
-            right_delim: str = RIGHT_DELIMS[matching_delim_index(LEFT_DELIMS, c)]
+            matching_rdi = matching_delim_index(LEFT_DELIMS, c)
+            if matching_rdi is None:
+                raise TypeError(f'Right delim indices for {c} in {comp_str} could not be found.')
+            right_delim = RIGHT_DELIMS[matching_rdi]
             continue
         if c in LEFT_DELIMS:
             right_count -= 1
@@ -90,10 +94,10 @@ def fetch_multiplier_list(
 
 
 def get_multiplier(multiplier_list: list[tuple[int, int, int]], n: int) -> int:
-    multiplier_list: list[int] = [multiplier
+    mp_list: list[int] = [multiplier
                        for ldi, rdi, multiplier in multiplier_list
                        if ldi <= n <= rdi]
-    return multiplier_list[-1] if len(multiplier_list) > 0 else 1
+    return mp_list[-1] if len(mp_list) > 0 else 1
 
 
 def tokenize(comp_str: str) -> tuple[list[Element], list[Subscript]]:
