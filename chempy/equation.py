@@ -10,13 +10,6 @@ import sympy as smp
 from typing import Optional, Self
 
 
-def solution(U):
-    # find the eigenvalues and eigenvector of U(transpose).U
-    e_vals, e_vecs = np.linalg.eig(np.dot(U.T, U))  
-    # extract the eigenvector (column) associated with the minimum eigenvalue
-    return e_vecs[:, np.argmin(e_vals)] 
-
-
 class Equation:
     def __init__(self, reactants: list[Compound], products: list[Compound]):
         if not isinstance(reactants, list):
@@ -27,12 +20,14 @@ class Equation:
                             f'`{products.__class__.__name__}` instead.')
         self.reactants = reactants
         self.products = products
-        self.coefficients = [1 for _ in range(len(self.reactants) + len(self.products))]
+        self.compounds = reactants + products
+        self.coefficients: list[int | float | str] = [1 for _ in range(len(self.reactants) + len(self.products))]
         self.equation = self._equation()
         self.is_balanced = False
+        self.h_rxn: Optional[int | float] = None
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}([{self.reactants}], [{self.products}])"
+        return f"{self.__class__.__name__}({self.reactants}, {self.products})"
 
     def _center_str(self, inp: int, latex: bool) -> str:
         """Encases the string in \\text{} for use when displayed in latex. Typically used to format coefficients."""
@@ -115,7 +110,10 @@ class Equation:
             while not all(arg.denominator == 1 for arg in args):
                 denom_list = [frac.denominator for frac in args if frac.denominator != 1]
                 args = [arg * max(denom_list) for arg in args]
-        return [f'{arg.numerator:,}' for arg in args]
+        coefficients = [arg.numerator for arg in args]
+        for i, compound in enumerate(self.reactants + self.products):
+            compound.coefficient = coefficients[i]
+        return [f'{coef:,}' for coef in coefficients]
 
     def balance(self) -> None:
         """Balances the chemical equation."""
@@ -123,6 +121,9 @@ class Equation:
         product_elements = self.total_right()
         if reactant_elements == product_elements:
             print('Equation already balanced')
+            self.is_balanced = True
+            self.equation = self._equation()
+            return
         matrix = []
         for element in reactant_elements:
             row = [0 for _ in range(len(self.reactants) + len(self.products))]
@@ -137,30 +138,58 @@ class Equation:
         self.equation = self._equation()
         self.is_balanced = True
 
-    def extend(self, equation: Self, 
-               h_rxn: H_rxn = None, 
-               desired_eq: Optional[tuple[Self, H_rxn]] = None
-              ) -> None:
+    def _matching_coefficient(self, comp: Compound) -> int:
+        for i, compound in enumerate(self.compounds):
+            if compound != comp:
+                continue
+            if i > len(self.reactants) - 1:
+                return -compound.coefficient
+            return compound.coefficient
+        return 0
+
+    def extend(self,
+               equations: list[tuple[Self, Optional[float | int]]],
+               desired_eq: Self = None) -> None:
         """
         Performs Hess's law problems.
     
         ## Example:
         ```
         >>> eq = Equation.parse_from_string('H2 + O2 -> H2O')
-        >>> assert eq.H_rxn == 0  # (kJ/mol)
+        >>> assert eq.h_rxn == 0  # (kJ/mol)
         >>> eq.extend(Equation.parse_from_string('H2O -> H2 + O'), -234)
         ```
         (Equation.parse_from_string('H2O -> H2 + O'), -234) represents (Equation, H_rxn in kJ/mol)
         """
-        # make input a list of tuples
-        assert isinstance(desired_eq, tuple)
-        assert isinstance(equation, self.__class__)
-        assert isinstance(H_rxn, Optional[float | int])
-        assert self.is_balanced
-        equation.balance()
-        intermediates = set(self.products).intersection(equation.reactants)
+        assert isinstance(desired_eq, self.__class__) 
+        assert isinstance(equations, list)
+        assert all(
+            isinstance(eq, self.__class__)
+            and isinstance(h_rxn, Optional[float | int])
+            for eq, h_rxn in equations
+        )
+        from .hess_law import Hess_Law
+        hess_law_eq = Hess_Law(initial_eq=(self, self.h_rxn), intermediate_equations=equations, desired_equation=desired_eq)
+        # print(hess_law_eq.unique_compounds)
+        # print(hess_law_eq.A)
+        # print(hess_law_eq.h_rxns)
+        # print(hess_law_eq.solution)
+        self.reactants = desired_eq.reactants
+        self.products = desired_eq.products
+        self.compounds = desired_eq.reactants + desired_eq.products
+        self.coefficients = desired_eq.coefficients
+        self.equation = desired_eq._equation()
+        self.is_balanced = True
+        self.h_rxn = hess_law_eq.new_h_rxn
 
+    def reversed(self) -> Self:
+        eq = Equation(self.products, self.reactants)
+        if self.h_rxn is not None:
+            eq.h_rxn = self.h_rxn * -1
+        return eq
 
+    def __hash__(self) -> int:
+        return hash((self.reactants, self.products))
 
     @classmethod
     def parse_from_string(cls, line: str):

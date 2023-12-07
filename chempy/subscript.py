@@ -1,4 +1,5 @@
 from typing import Optional, Self
+
 class Subscript:
     def __init__(self, comp_str: str, 
                  element_index: Optional[int] = None, 
@@ -7,10 +8,10 @@ class Subscript:
         if not isinstance(comp_str, str):
             raise TypeError('Expected `str` for `comp_str` argument but received '
                             f'`{comp_str.__class__.__name__}` instead.')
-        self.comp_str = comp_str
-        self.element_index = element_index
         if start_index is None and size is None:
             raise Exception(f'Cannot derive subscript size from {comp_str}')
+        self.comp_str = comp_str
+        self.element_index = element_index
         self.start_index = start_index
         self.element_str = self.comp_str[element_index:start_index]
         self.size, self.subs = self._get_sizes()

@@ -1,4 +1,4 @@
-from .utils import tokenize
+from .utils import tokenize, strip_coefficients
 from collections import Counter
 from .element import Element
 from .subscript import Subscript
@@ -6,10 +6,13 @@ from typing import Optional, Self
 
 class Compound:
     def __init__(self, comp_str: str, tokens: Optional[list[Element]] = None,
-                 subscripts: Optional[list[Subscript]] = None):
+                 subscripts: Optional[list[Subscript]] = None,
+                 mass: Optional[float] = None):
         if not isinstance(comp_str, str):
             raise TypeError('Expected `str` for `comp_str` argument but received '
                             f'`{comp_str.__class__.__name__}` instead.')
+        self.original_comp_str = comp_str.strip()
+        comp_str = strip_coefficients(comp_str)
         if tokens is None:
             tokens, subscripts = tokenize(comp_str)
         self.tokens = tokens
@@ -19,9 +22,14 @@ class Compound:
         self.molar_mass = self._get_molar_mass()
         self.valence_electrons = self._get_valence_electrons()
         self.electrons = self._get_total_electrons()
+        self.coefficient: int = 1
+        self.mass = mass
+        self.moles: Optional[float] = None
+        if self.mass is not None:
+            self.moles = self.mass / self.molar_mass
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}('{self.comp_str}', {self.tokens}, {self.subscripts})"
+        return f"{self.__class__.__name__}('{self.comp_str}')"
 
     def __add__(self, other: Self):
         if isinstance(other, Element):
@@ -35,18 +43,18 @@ class Compound:
 
     def _get_total_electrons(self) -> int:
         """Returns the sum of the total electrons in the compound per number of elements. (Assigned to self.electrons)"""
-        return sum(token.electrons * count 
-                   for token, count in self.elements.items())
+        return sum(element.electrons * count 
+                   for element, count in self.elements.items())
     
     def _get_molar_mass(self) -> float:
         """Returns the total molar mass of all the elements in the Compound. (Assigned to self.molar_mass)"""
-        return sum(token.molar_mass  * count 
-                   for token, count in self.elements.items())
+        return sum(element.molar_mass  * count 
+                   for element, count in self.elements.items())
     
     def _get_valence_electrons(self) -> int:
         """Returns the sum of the valence electrons in the Compound (calculated using the QM model)."""
-        return sum(token.valence_electrons * count 
-                   for token, count in self.elements.items())
+        return sum(element.valence_electrons * count 
+                   for element, count in self.elements.items())
 
     def count(self, element) -> int:
         """Returns the number of occurances an Element has in a compound."""
@@ -81,6 +89,8 @@ class Compound:
                 latex_str += prefix + c + '}' + '_{' + str(subs) + '}'
         return latex_str
 
+    def __hash__(self) -> int:
+        return hash(self.comp_str)
 
     def __eq__(self, other: Self) -> bool:
         return sorted(self.tokens, key=str) == sorted(other.tokens, key=str)
