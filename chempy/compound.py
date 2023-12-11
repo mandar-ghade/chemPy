@@ -1,4 +1,4 @@
-from .utils import tokenize, strip_coefficients
+from .utils import tokenize, strip_coefficients, extract_coefficient
 from collections import Counter
 from .element import Element
 from .subscript import Subscript
@@ -12,6 +12,7 @@ class Compound:
             raise TypeError('Expected `str` for `comp_str` argument but received '
                             f'`{comp_str.__class__.__name__}` instead.')
         self.original_comp_str = comp_str.strip()
+        size, no_subs = extract_coefficient(comp_str.strip())
         comp_str = strip_coefficients(comp_str)
         if tokens is None:
             tokens, subscripts = tokenize(comp_str)
@@ -22,7 +23,12 @@ class Compound:
         self.molar_mass = self._get_molar_mass()
         self.valence_electrons = self._get_valence_electrons()
         self.electrons = self._get_total_electrons()
-        self.coefficient: int = 1
+        self.coefficient: int | float = 1
+        if not no_subs:
+            if size.is_integer():
+                self.coefficient = int(size)
+            else:
+                self.coefficient = size
         self.mass = mass
         self.moles: Optional[float] = None
         if self.mass is not None:

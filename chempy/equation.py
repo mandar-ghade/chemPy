@@ -10,6 +10,20 @@ import sympy as smp
 from typing import Optional, Self
 
 
+
+
+def extract_elements(compound: Compound) -> Counter[Element]:
+        """
+        Returns a Counter of elements in a specific compound.
+        """
+        elements = Counter()
+        cmp = compound.elements.most_common()
+        for (element, count) in cmp:
+            elements[element] = count
+        return elements
+# make function to add like-elements
+
+
 class Equation:
     def __init__(self, reactants: list[Compound], products: list[Compound]):
         if not isinstance(reactants, list):
@@ -21,15 +35,14 @@ class Equation:
         self.reactants = reactants
         self.products = products
         self.compounds = reactants + products
-        self.coefficients: list[int | float | str] = [1 for _ in range(len(self.reactants) + len(self.products))]
+        self.coefficients: list[int | float | str] = [compound.coefficient for compound in self.compounds]
         self.equation = self._equation()
-        self.is_balanced = False
         self.h_rxn: Optional[int | float] = None
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.reactants}, {self.products})"
 
-    def _center_str(self, inp: int, latex: bool) -> str:
+    def _center_str(self, inp: int | float, latex: bool) -> str:
         """Encases the string in \\text{} for use when displayed in latex. Typically used to format coefficients."""
         return str(inp) if latex in [None, False] else f'\\text{{{inp}}}'
 
@@ -42,7 +55,7 @@ class Equation:
         return ' + '.join(
             [
                 self._center_str(coef, latex) + f'({self._latex(reactant, latex)})' 
-                if int(str(coef).replace(',', '')) > 1 
+                if float(str(coef).replace(',', '')) != 1 
                 else self._latex(reactant, latex)
                 for reactant, coef in 
                 zip(self.reactants, self.coefficients[:len(self.reactants)])
@@ -51,7 +64,7 @@ class Equation:
             ' + '.join(
                 [
                     self._center_str(coef, latex) + f'({self._latex(product, latex)})' 
-                    if int(str(coef).replace(',', '')) > 1 
+                    if float(str(coef).replace(',', '')) != 1
                     else self._latex(product, latex)
                     for product, coef in zip(self.products, self.coefficients[len(self.reactants):])
                 ])
@@ -115,15 +128,29 @@ class Equation:
             compound.coefficient = coefficients[i]
         return [f'{coef:,}' for coef in coefficients]
 
+    def get_is_balanced(self) -> bool:
+        """
+        Returns whether the equation is balanced.
+        """
+        left_count = Counter()
+        right_count = Counter()
+        for compound in self.reactants:
+            elements: Counter[Element] = extract_elements(compound)
+            for element in elements:
+                left_count[f'{element}'] += elements[element] * compound.coefficient
+        for compound in self.products:
+            elements: Counter[Element] = extract_elements(compound)
+            for element in elements:
+                right_count[f'{element}'] += elements[element] * compound.coefficient
+        return left_count == right_count
+
     def balance(self) -> None:
         """Balances the chemical equation."""
-        reactant_elements = self.total_left()
-        product_elements = self.total_right()
-        if reactant_elements == product_elements:
-            print('Equation already balanced')
-            self.is_balanced = True
+        if self.get_is_balanced():
             self.equation = self._equation()
             return
+        reactant_elements = self.total_left()
+        product_elements = self.total_right()
         matrix = []
         for element in reactant_elements:
             row = [0 for _ in range(len(self.reactants) + len(self.products))]
