@@ -11,7 +11,6 @@ class Compound:
         if not isinstance(comp_str, str):
             raise TypeError('Expected `str` for `comp_str` argument but received '
                             f'`{comp_str.__class__.__name__}` instead.')
-        self.original_comp_str = comp_str.strip()
         size, no_subs = extract_coefficient(comp_str.strip())
         comp_str = strip_coefficients(comp_str)
         if tokens is None:
@@ -41,11 +40,14 @@ class Compound:
         if isinstance(other, Element):
             return Compound(self.comp_str + other.symbol)
         elif isinstance(other, self.__class__):
+            if self.comp_str == other.comp_str:
+                coef = self.coefficient + other.coefficient
+                return Compound(f'{coef}{self.comp_str}')
             return Compound(self.comp_str + other.comp_str)
         
     def __mul__(self, other: int):
         assert isinstance(other, int)
-        return Compound(f'[{self.comp_str}]{other}')
+        return Compound(f'[{self.coefficient if self.coefficient != 1 else ''}{self.comp_str}]{other}')
 
     def _get_total_electrons(self) -> int:
         """Returns the sum of the total electrons in the compound per number of elements. (Assigned to self.electrons)"""
@@ -96,7 +98,8 @@ class Compound:
         return latex_str
 
     def __hash__(self) -> int:
-        return hash(self.comp_str)
+        return hash(tuple(item for item in self.elements.items()))
 
     def __eq__(self, other: Self) -> bool:
-        return sorted(self.tokens, key=str) == sorted(other.tokens, key=str)
+        return self.elements == other.elements
+    

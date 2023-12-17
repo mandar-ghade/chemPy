@@ -10,8 +10,6 @@ import sympy as smp
 from typing import Optional, Self
 
 
-
-
 def extract_elements(compound: Compound) -> Counter[Element]:
         """
         Returns a Counter of elements in a specific compound.
@@ -21,7 +19,20 @@ def extract_elements(compound: Compound) -> Counter[Element]:
         for (element, count) in cmp:
             elements[element] = count
         return elements
-# make function to add like-elements
+
+
+def remove_duplicate_compounds(compounds: list[Compound]) -> list[Compound]:
+    new_comp_list: list[Compound] = []
+    for i, compound in enumerate(compounds):
+        comp = compound
+        if comp in new_comp_list:
+            continue
+        for comp2 in compounds[i+1:]:
+            if comp2 != comp:
+                continue
+            comp = comp2 + comp
+        new_comp_list.append(comp)
+    return new_comp_list
 
 
 class Equation:
@@ -32,9 +43,9 @@ class Equation:
         if not isinstance(products, list):
             raise TypeError('Expected `list[Compound]` for `products` argument but received '
                             f'`{products.__class__.__name__}` instead.')
-        self.reactants = reactants
-        self.products = products
-        self.compounds = reactants + products
+        self.reactants = remove_duplicate_compounds(reactants)
+        self.products = remove_duplicate_compounds(products)
+        self.compounds = self.reactants + self.products
         self.coefficients: list[int | float | str] = [compound.coefficient for compound in self.compounds]
         self.equation = self._equation()
         self.h_rxn: Optional[int | float] = None
@@ -150,7 +161,6 @@ class Equation:
             self.equation = self._equation()
             return
         reactant_elements = self.total_left()
-        product_elements = self.total_right()
         matrix = []
         for element in reactant_elements:
             row = [0 for _ in range(len(self.reactants) + len(self.products))]
@@ -162,8 +172,9 @@ class Equation:
                 row[i] = -count
             matrix.append(row)
         self.coefficients = self._get_coefficients(matrix)
+        if not self.get_is_balanced():
+            print('An error occured while balancing the chemical equation.')
         self.equation = self._equation()
-        self.is_balanced = True
 
     def _matching_coefficient(self, comp: Compound) -> int:
         for i, compound in enumerate(self.compounds):
@@ -197,16 +208,11 @@ class Equation:
         )
         from .hess_law import Hess_Law
         hess_law_eq = Hess_Law(initial_eq=(self, self.h_rxn), intermediate_equations=equations, desired_equation=desired_eq)
-        # print(hess_law_eq.unique_compounds)
-        # print(hess_law_eq.A)
-        # print(hess_law_eq.h_rxns)
-        # print(hess_law_eq.solution)
         self.reactants = desired_eq.reactants
         self.products = desired_eq.products
         self.compounds = desired_eq.reactants + desired_eq.products
         self.coefficients = desired_eq.coefficients
         self.equation = desired_eq._equation()
-        self.is_balanced = True
         self.h_rxn = hess_law_eq.new_h_rxn
 
     def reversed(self) -> Self:

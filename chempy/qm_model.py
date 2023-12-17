@@ -16,14 +16,14 @@ def total_electrons(l: int, all_electrons: int, proton_count: int) -> int:
 def get_special_orbitals(
         n: int, l: int,
         left_over: list[Orbital],
-    ) -> tuple[bool, list[Orbital]]:
+    ) -> list[Orbital]:
     matches = [
         o for o in reversed(left_over)
         if (o.n == n - 1 and o.shape == SUBSHELL_MAP[l + 1]) or
         (o.n == n - 2 and o.shape == SUBSHELL_MAP[l + 2]) or
         (o.n == n - 3 and o.shape == SUBSHELL_MAP[l + 3])
     ]
-    return (len(matches) > 0, matches)
+    return matches
 
 
 def get_electron_config(
@@ -53,36 +53,35 @@ def get_electron_config(
 
     for orbital in non_special_orbitals:
         if new_left_overs != _left_over and _left_over is not None:
-            matches_exist, matches = get_special_orbitals(orbital.n, orbital.l, _left_over)
-            if matches_exist:
-                for s_o in matches:
-                    e_ = total_electrons(s_o.l, count, protons)
-                    count += e_
-                    match s_o.exception(e_):
-                        case 'utm':
-                            e_config[-1].n = pqn
-                            e_config[-1].electrons = 1
-                            e_ += 1
-                        case 'lanthanide':
-                            lanthanide_exceptions.append(s_o)
-                            e_ -= 1
-                        case '5d':
-                            e_config[-2].n = 6
-                            e_config[-2].shape = 's'
-                            e_config[-2].electrons = 1
-                        case 'th':
-                            th_exception = True
-                            e_ -= 2
-                        case '5f':
-                            five_f_exception = True
-                            e_ -= 1
-                        case 'lr':
-                            lr_exception = True
-                            e_ = 0
-                    _left_over.remove(s_o)
-                    if e_:
-                        s_o.electrons = e_
-                        e_config.append(s_o)
+            matches = get_special_orbitals(orbital.n, orbital.l, _left_over)
+            for s_o in matches:
+                e = total_electrons(s_o.l, count, protons)
+                count += e
+                match s_o.exception(e):
+                    case 'utm':
+                        e_config[-1].n = pqn
+                        e_config[-1].electrons = 1
+                        e += 1
+                    case 'lanthanide':
+                        lanthanide_exceptions.append(s_o)
+                        e -= 1
+                    case '5d':
+                        e_config[-2].n = 6
+                        e_config[-2].shape = 's'
+                        e_config[-2].electrons = 1
+                    case 'th':
+                        th_exception = True
+                        e -= 2
+                    case '5f':
+                        five_f_exception = True
+                        e -= 1
+                    case 'lr':
+                        lr_exception = True
+                        e = 0
+                _left_over.remove(s_o)
+                if e:
+                    s_o.electrons = e
+                    e_config.append(s_o)
         electrons = total_electrons(orbital.l, count, protons)
         count += electrons
         if electrons:
